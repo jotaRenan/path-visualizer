@@ -50,15 +50,15 @@ function generateDOMItem(grid: Grid, node: Node): DomNodeTuple<Node> {
     const domNode = document.createElement('div');
     domNode.classList.add('cell');
 
-    node.isStart.pipe(skip(1)).subscribe((isStart: boolean) => {
+    node.isStart$.pipe(skip(1)).subscribe((isStart: boolean) => {
         if (isStart) domNode.classList.add('start');
         else domNode.classList.remove('start');
     });
-    node.isFinish.pipe(skip(1)).subscribe((isFinish: boolean) => {
+    node.isFinish$.pipe(skip(1)).subscribe((isFinish: boolean) => {
         if (isFinish) domNode.classList.add('finish');
         else domNode.classList.remove('finish');
     });
-    node.status.pipe(skip(1)).subscribe((status: NodeStatus) => {
+    node.status$.pipe(skip(1)).subscribe((status: NodeStatus) => {
         if (status === NodeStatus.Path) domNode.classList.add('path');
         if (status === NodeStatus.Visited) domNode.classList.add('visited');
         if (status === NodeStatus.Unvisited) {

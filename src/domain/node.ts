@@ -15,16 +15,16 @@ export class Node {
     public visitationOrder: number = 0;
     private _neighbors: Node[] = [];
     private _status: BehaviorSubject<NodeStatus>;
-    isStart: BehaviorSubject<boolean>;
-    isFinish: BehaviorSubject<boolean>;
+    private _isStart$: BehaviorSubject<boolean>;
+    private _isFinish$: BehaviorSubject<boolean>;
     _isWall: BehaviorSubject<boolean>;
 
     constructor(id: number, row: number, column: number) {
         this.id = id;
         this.row = row;
         this.column = column;
-        this.isStart = new BehaviorSubject(false);
-        this.isFinish = new BehaviorSubject(false);
+        this._isStart$ = new BehaviorSubject(false);
+        this._isFinish$ = new BehaviorSubject(false);
         this.distance = Infinity;
         this._status = new BehaviorSubject(NodeStatus.Unvisited);
         this._isWall = new BehaviorSubject(false);
@@ -34,6 +34,14 @@ export class Node {
         this._isWall.next(isWall);
         this.unsetAsFinish();
         this.unsetAsStart();
+    }
+
+    get isStart$() {
+        return this._isStart$.asObservable();
+    }
+
+    get isFinish$() {
+        return this._isFinish$.asObservable();
     }
 
     get isWall() {
@@ -52,7 +60,7 @@ export class Node {
         return [...this._neighbors];
     }
 
-    get status() {
+    get status$() {
         return this._status.asObservable();
     }
 
@@ -65,23 +73,23 @@ export class Node {
     }
 
     public setAsStart = () => {
-        this.isStart.next(true);
+        this._isStart$.next(true);
         this.unsetAsFinish();
         this.distance = 0;
     }
 
     public setAsFinish = () => {
-        this.isFinish.next(true);
+        this._isFinish$.next(true);
         this.unsetAsStart();
     }
 
     public unsetAsStart = () => {
-        this.isStart.next(false);
+        this._isStart$.next(false);
         this.distance = Infinity;
     }
 
     public unsetAsFinish = () => {
-        this.isFinish.next(false);
+        this._isFinish$.next(false);
     }
 
     get isVisited() {
