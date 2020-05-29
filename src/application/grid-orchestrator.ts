@@ -1,11 +1,10 @@
-import Grid from "../domain/grid";
-import { NodeTuple } from "./node-tuple";
-import { Node, NodeStatus } from '../domain/node';
-import { skip } from "rxjs/operators";
-import { fromEvent } from "rxjs";
-import { AnimationDelay } from "../utils/constants";
+import { fromEvent, interval } from "rxjs";
+import { filter, map, skip, takeWhile } from "rxjs/operators";
 import { DijkstraSolver } from "../domain/dijkstraSolver";
+import Grid from "../domain/grid";
+import { Node, NodeStatus } from '../domain/node';
 import Solver, { Solution } from "../domain/solver";
+import { AnimationDelay } from "../utils/constants";
 
 export function generateGrid(rows: number, columns: number, gridContainer: HTMLElement) {
     const grid = new Grid(rows, columns);
@@ -39,17 +38,18 @@ function generateDOMItem(node: Node) {
 
 const wallEditState = { isMouseDown: false, willBuildWall: false };
 function attachEventListeners(node: Node, domNode: HTMLDivElement) {
+    registerModelListeners(node, domNode);
+    registerDOMListeners(domNode, node);
+}
+
+function registerModelListeners(node: Node, domNode: HTMLDivElement) {
     node.isStart$.subscribe((isStart: boolean) => {
-        if (isStart)
-            domNode.classList.add('start');
-        else
-            domNode.classList.remove('start');
+        if (isStart) domNode.classList.add('start');
+        else domNode.classList.remove('start');
     });
     node.isFinish$.subscribe((isFinish: boolean) => {
-        if (isFinish)
-            domNode.classList.add('finish');
-        else
-            domNode.classList.remove('finish');
+        if (isFinish) domNode.classList.add('finish');
+        else domNode.classList.remove('finish');
     });
     node.status$.pipe(skip(1)).subscribe((status: NodeStatus) => {
         if (status === NodeStatus.Path)
@@ -62,45 +62,41 @@ function attachEventListeners(node: Node, domNode: HTMLDivElement) {
         }
     });
     node.isWall$.subscribe(isWall => {
-        if (isWall)
-            domNode.classList.add('wall');
-        else
-            domNode.classList.remove('wall');
+        if (isWall) domNode.classList.add('wall');
+        else domNode.classList.remove('wall');
     });
-    fromEvent(domNode, 'click').subscribe(() => node.setAsStart());
-    fromEvent(domNode, 'dblclick').subscribe(() => node.setAsFinish());
-    fromEvent(domNode, 'mousedown').subscribe(() => {
+}
+
+function registerDOMListeners(domNode: HTMLDivElement, node: Node) {
+    fromEvent(domNode, 'click').subscribe(_ => node.setAsStart());
+    fromEvent(domNode, 'dblclick').subscribe(_ => node.setAsFinish());
+    fromEvent(domNode, 'mouseup').subscribe(_ => wallEditState.isMouseDown = false);
+    fromEvent(domNode, 'mousedown').subscribe(_ => {
         wallEditState.isMouseDown = true;
         wallEditState.willBuildWall = !node.isWall;
         node.markAsWall(!node.isWall);
     });
-    fromEvent(domNode, 'mouseup').subscribe(() => wallEditState.isMouseDown = false);
-    fromEvent(domNode, 'mouseenter').subscribe(() => {
-        if (wallEditState.isMouseDown) {
-            node.markAsWall(wallEditState.willBuildWall);
-        }
-    });
+    fromEvent(domNode, 'mouseenter')
+        .pipe(filter(_ => wallEditState.isMouseDown))
+        .subscribe(_ => node.markAsWall(wallEditState.willBuildWall));
 }
 
 export function solve(grid: Grid) {
     const solver: Solver = new DijkstraSolver();
-    solver.solve(grid).then(visualizeSolution)
+    const solutionSteps = solver.solve(grid);
+    interval(AnimationDelay)
+        .pipe(
+            map(_ => solutionSteps.next()),
+            takeWhile(steps => !steps.done),
+            filter(step => step.value),
+        ).subscribe(step => visualizeNode(grid, step.value));
 }
 
-function visualizeSolution({ success, path, visitedInOrder }: Solution) {
-    for (let i = 0; i < visitedInOrder.length; i++) {
-        setTimeout(() => visitedInOrder[i].markAsVisited(), i * AnimationDelay);
-    }
-    if (success) {
-        setTimeout(() => visualizePath(path), visitedInOrder.length * AnimationDelay);
-    }
-}
-
-function visualizePath(path: Node[]) {
-    for (let i = 0; i < path.length; i++) {
-        const node = path[i];
-        setTimeout(() => {
-            node.markAsPath();
-        }, i * AnimationDelay);
+function visualizeNode(grid: Grid, { isPath, node }: Solution) {
+    if (node === grid.finishNode || node === grid.startNode) return;
+    if (isPath) {
+        node.markAsPath()
+    } else {
+        node.markAsVisited();
     }
 }

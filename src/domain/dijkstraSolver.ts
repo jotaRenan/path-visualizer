@@ -1,4 +1,4 @@
-import Solver from './solver';
+import Solver, { Solution } from './solver';
 import Grid from "./grid";
 import { Node } from "./node";
 
@@ -8,7 +8,14 @@ export class DijkstraSolver implements Solver {
     private distances: WeakMap<Node, number>;
     private previous: WeakMap<Node, Node>;
 
-    async solve(grid: Grid): Promise<{ success: boolean, path?: Node[], visitedInOrder: Node[] }> {
+    reset() {
+        this.visited = [];
+        this.unvisited = [];
+        this.distances = new WeakMap();
+        this.previous = new WeakMap();
+    }
+
+    * solve(grid: Grid): Generator<Solution> {
         this.reset();
         if (grid.startNode === undefined) return { success: false, visitedInOrder: [] };
 
@@ -26,7 +33,7 @@ export class DijkstraSolver implements Solver {
                 } else if (a.distance < b.distance) {
                     return -1;
                 }
-                const closestId = closest?.id ?? (grid.startNode as Node).id;
+                const closestId = closest?.id ?? grid.startNode.id;
                 const aDist = a.id - closestId;
                 const bDist = b.id - closestId;
                 if (aDist > bDist) {
@@ -39,13 +46,21 @@ export class DijkstraSolver implements Solver {
             });
             closest = this.unvisited.shift() as Node;
             if (closest.isWall) continue;
-            if (closest.distance === Infinity) return { success: false, visitedInOrder: this.visited };
+            if (closest.distance === Infinity) {
+                yield { node: closest, isPath: false };
+                return;
+            }
             if (closest === grid.finishNode) {
                 const path = this.getPathTo(closest);
-                return { success: true, path, visitedInOrder: this.visited }
+                for (const node of path) {
+                    yield { node, isPath: true };
+                }
+                return;
             }
             this.visited.push(closest);
             closest.visitationOrder = this.visited.length;
+            yield { node: closest, isPath: false };
+
             for (const neighbor of closest?.neighbors.filter(n => !n.isWall)) {
                 const currentNeighborDistance = neighbor.distance;
                 const distanceThroughCurrent = closest.distance + 1;
@@ -56,13 +71,6 @@ export class DijkstraSolver implements Solver {
             }
         }
         return { success: false, visitedInOrder: this.visited };
-    }
-
-    reset() {
-        this.visited = [];
-        this.unvisited = [];
-        this.distances = new WeakMap();
-        this.previous = new WeakMap();
     }
 
     getPathTo(target: Node | undefined, currentPath: Node[] = []): Node[] {

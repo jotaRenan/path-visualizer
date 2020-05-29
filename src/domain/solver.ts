@@ -2,11 +2,10 @@ import Grid from "./grid";
 import { Node } from './node';
 
 export type Solution = {
-    success: boolean;
-    path?: Node[];
-    visitedInOrder?: Node[];
+    node: Node;
+    isPath: boolean;
 };
 
 export default interface Solver {
-    solve: (grid: Grid) => Promise<Solution>;
+    solve: (grid: Grid) => Generator<Solution>;
 }
