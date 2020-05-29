@@ -51,6 +51,7 @@ export default class Grid {
                 if (this.templateWalls.has(nodeId)) {
                     newNode.markAsWall(true);
                 }
+                // newNode.isStart$.subscribe(_ => this.startNode = newNode);
                 row.push(newNode);
             }
             nodesGrid.push(row);
