@@ -9,8 +9,8 @@ import Solver, { Solution } from "../domain/solver";
 
 export function generateGrid(rows: number, columns: number, gridContainer: HTMLElement) {
     const grid = new Grid(rows, columns);
-    grid.startNode = grid.nodes[0][0];
-    grid.finishNode = grid.nodes[rows - 1][columns - 1];
+    grid.nodes[0][0].setAsStart();
+    grid.nodes[rows - 1][columns - 1].setAsFinish();
     generateDOMGrid(grid, gridContainer);
 
     return grid;
@@ -20,7 +20,7 @@ function generateDOMGrid(grid: Grid, gridContainer: HTMLElement) {
     clearGrid(gridContainer);
     grid.nodes
         .flat()
-        .map(node => generateDOMItem({ grid, node }))
+        .map(node => generateDOMItem(node))
         .forEach(gridNode => gridContainer.appendChild(gridNode));
 }
 
@@ -30,15 +30,15 @@ function clearGrid(gridContainer: HTMLElement) {
     }
 }
 
-function generateDOMItem({ grid, node }: { grid: Grid; node: Node; }) {
+function generateDOMItem(node: Node) {
     const domNode = document.createElement('div');
     domNode.classList.add('cell');
-    attachEventListeners(node, domNode, grid);
+    attachEventListeners(node, domNode);
     return domNode;
 }
 
 const wallEditState = { isMouseDown: false, willBuildWall: false };
-function attachEventListeners(node: Node, domNode: HTMLDivElement, grid: Grid) {
+function attachEventListeners(node: Node, domNode: HTMLDivElement) {
     node.isStart$.subscribe((isStart: boolean) => {
         if (isStart)
             domNode.classList.add('start');
@@ -67,8 +67,8 @@ function attachEventListeners(node: Node, domNode: HTMLDivElement, grid: Grid) {
         else
             domNode.classList.remove('wall');
     });
-    fromEvent(domNode, 'click').subscribe(() => grid.startNode = node);
-    fromEvent(domNode, 'dblclick').subscribe(() => grid.finishNode = node);
+    fromEvent(domNode, 'click').subscribe(() => node.setAsStart());
+    fromEvent(domNode, 'dblclick').subscribe(() => node.setAsFinish());
     fromEvent(domNode, 'mousedown').subscribe(() => {
         wallEditState.isMouseDown = true;
         wallEditState.willBuildWall = !node.isWall;

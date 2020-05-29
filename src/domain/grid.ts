@@ -1,5 +1,6 @@
-import { Node } from './node';
+import { filter } from 'rxjs/operators';
 import { allowDiagonal } from '../utils/constants';
+import { Node } from './node';
 
 export default class Grid {
     public readonly nodes: Node[][];
@@ -20,7 +21,6 @@ export default class Grid {
     set startNode(node: Node | undefined) {
         this.startNode?.unsetAsStart();
         this._startNode = node;
-        node?.setAsStart();
     }
 
     get startNode() {
@@ -30,7 +30,6 @@ export default class Grid {
     set finishNode(node: Node | undefined) {
         this.finishNode?.unsetAsFinish();
         this._finishNode = node;
-        node?.setAsFinish();
     }
 
     get finishNode() {
@@ -51,6 +50,10 @@ export default class Grid {
                 if (this.templateWalls.has(nodeId)) {
                     newNode.markAsWall(true);
                 }
+                newNode.isFinish$.pipe(filter(Boolean)).subscribe(() => {
+                    this.finishNode = newNode;
+                });
+                newNode.isStart$.pipe(filter(Boolean)).subscribe(() => this.startNode = newNode);
                 row.push(newNode);
             }
             nodesGrid.push(row);
