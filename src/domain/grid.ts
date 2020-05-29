@@ -6,12 +6,12 @@ export default class Grid {
     private _startNode: Node | undefined = undefined;
     private _finishNode: Node | undefined = undefined;
     private templateWalls: Set<number>;
+
     constructor(rows: number, columns: number) {
         this.templateWalls = new Set();
         const hash = window.location.hash.slice(1).split('&')[2];
         if (hash) {
             const entries = hash.split(':').map(x => parseInt(x, 10));
-            console.log(entries);
             this.templateWalls = new Set(entries);
         }
         this.nodes = this.generateNodes(rows, columns);
@@ -51,7 +51,6 @@ export default class Grid {
                 if (this.templateWalls.has(nodeId)) {
                     newNode.markAsWall(true);
                 }
-                // newNode.isStart$.subscribe(_ => this.startNode = newNode);
                 row.push(newNode);
             }
             nodesGrid.push(row);

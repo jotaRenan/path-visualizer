@@ -5,7 +5,7 @@ import { skip } from "rxjs/operators";
 import { fromEvent } from "rxjs";
 import { AnimationDelay } from "../utils/constants";
 import { DijkstraSolver } from "../domain/dijkstraSolver";
-import Solver from "../domain/solver";
+import Solver, { Solution } from "../domain/solver";
 
 export function generateGrid(rows: number, columns: number, gridContainer: HTMLElement) {
     const grid = new Grid(rows, columns);
@@ -68,7 +68,6 @@ function attachEventListeners(node: Node, domNode: HTMLDivElement, grid: Grid) {
             domNode.classList.remove('wall');
     });
     fromEvent(domNode, 'click').subscribe(() => grid.startNode = node);
-    // fromEvent(domNode, 'click').subscribe(() => node.setAsStart());
     fromEvent(domNode, 'dblclick').subscribe(() => grid.finishNode = node);
     fromEvent(domNode, 'mousedown').subscribe(() => {
         wallEditState.isMouseDown = true;
@@ -85,28 +84,16 @@ function attachEventListeners(node: Node, domNode: HTMLDivElement, grid: Grid) {
 
 export function solve(grid: Grid) {
     const solver: Solver = new DijkstraSolver();
-    solver.solve(grid).then(({ success, path, visitedInOrder }) => {
+    solver.solve(grid).then(visualizeSolution)
+}
 
-        if (!success) {
-            for (let i = 0; i < (visitedInOrder as Node[]).length; i++) {
-                setTimeout(() => {
-                    (visitedInOrder as Node[])[i].markAsVisited();
-                }, i * AnimationDelay);
-
-            }
-        } else {
-            for (let i = 0; i <= (visitedInOrder as Node[]).length; i++) {
-                if (i === (visitedInOrder as Node[]).length) {
-                    setTimeout(() => visualizePath(path as Node[]), i * AnimationDelay);
-                    return;
-                }
-                setTimeout(() => {
-                    (visitedInOrder as Node[])[i].markAsVisited();
-                }, i * AnimationDelay);
-
-            }
-        }
-    })
+function visualizeSolution({ success, path, visitedInOrder }: Solution) {
+    for (let i = 0; i < visitedInOrder.length; i++) {
+        setTimeout(() => visitedInOrder[i].markAsVisited(), i * AnimationDelay);
+    }
+    if (success) {
+        setTimeout(() => visualizePath(path), visitedInOrder.length * AnimationDelay);
+    }
 }
 
 function visualizePath(path: Node[]) {
