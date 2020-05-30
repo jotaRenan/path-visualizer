@@ -1,5 +1,5 @@
-import { fromEvent, interval, never, Observable, of } from "rxjs";
-import { filter, map, scan, skip, startWith, switchMap, takeWhile, tap, concatMap } from "rxjs/operators";
+import { fromEvent, interval, never, of } from "rxjs";
+import { filter, map, scan, skip, startWith, switchMap, takeWhile, tap } from "rxjs/operators";
 import { DijkstraSolver } from "../domain/dijkstraSolver";
 import Grid from "../domain/grid";
 import { Node, NodeStatus } from '../domain/node';
@@ -36,7 +36,7 @@ function generateDOMItem(node: Node) {
     return domNode;
 }
 
-const wallEditState = { isMouseDown: false, willBuildWall: false };
+const wallEditState = { isMouseDown: false, willBuildWall: false, isMovingStart: false, isMovingFinish: false };
 function attachEventListeners(node: Node, domNode: HTMLDivElement) {
     registerModelListeners(node, domNode);
     registerDOMListeners(domNode, node);
@@ -68,17 +68,50 @@ function registerModelListeners(node: Node, domNode: HTMLDivElement) {
 }
 
 function registerDOMListeners(domNode: HTMLDivElement, node: Node) {
-    fromEvent(domNode, 'click').subscribe(_ => node.setAsStart());
-    fromEvent(domNode, 'dblclick').subscribe(_ => node.setAsFinish());
-    fromEvent(domNode, 'mouseup').subscribe(_ => wallEditState.isMouseDown = false);
-    fromEvent(domNode, 'mousedown').subscribe(_ => {
-        wallEditState.isMouseDown = true;
-        wallEditState.willBuildWall = !node.isWall;
-        node.markAsWall(!node.isWall);
-    });
+    fromEvent(domNode, 'mouseup')
+        .pipe(
+            tap(_ => {
+                wallEditState.isMouseDown = false;
+                if (wallEditState.isMovingFinish) node.setAsFinish();
+                else if (wallEditState.isMovingStart) node.setAsStart();
+                wallEditState.isMovingFinish = false;
+                wallEditState.isMovingStart = false;
+            }),
+        ).subscribe();
+
+    fromEvent(domNode, 'mousedown').pipe(
+        tap(_ => {
+            wallEditState.isMouseDown = true;
+            if (node.isStart || node.isFinish) {
+                wallEditState.isMovingStart = node.isStart;
+                wallEditState.isMovingFinish = node.isFinish;
+            } else {
+                wallEditState.willBuildWall = !node.isWall;
+                node.markAsWall(!node.isWall);
+            }
+        },
+        )).subscribe();
     fromEvent(domNode, 'mouseenter')
-        .pipe(filter(_ => wallEditState.isMouseDown))
-        .subscribe(_ => node.markAsWall(wallEditState.willBuildWall));
+        .pipe(
+            filter(_ => wallEditState.isMouseDown),
+            tap(_ => {
+                if ((wallEditState.isMovingStart || wallEditState.isMovingFinish) && !node.isStart && !node.isFinish && !node.isWall) {
+                    if (wallEditState.isMovingFinish) node.setAsFinish();
+                    else node.setAsStart();
+                } else if (!node.isStart && !node.isFinish) {
+                    node.markAsWall(wallEditState.willBuildWall);
+                }
+            }),
+        ).subscribe();
+
+    fromEvent(domNode, 'mouseleave')
+        .pipe(
+            filter(_ => wallEditState.isMouseDown && (node.isStart || node.isFinish)),
+            tap(_ => {
+                if (node.isFinish) node.unsetAsFinish();
+                if (node.isStart) node.unsetAsStart();
+            }),
+        ).subscribe();
 }
 
 export function solve(grid: Grid) {

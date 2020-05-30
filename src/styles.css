@@ -31,6 +31,13 @@ body {
     background-color: white;
 }
 
+.grid .cell.start, 
+.grid .cell.finish {
+    cursor: move;
+    border-radius: 3px;
+    transform: scale(1.5);
+}
+
 .grid .cell.start {
     background-color: skyblue;
 }
@@ -42,7 +49,6 @@ body {
 }
 .grid .cell.visited {
     background-color: darkslateblue;
-    transition: .1s ease-in;
 }
 .grid .cell.path {
     background-color: greenyellow;

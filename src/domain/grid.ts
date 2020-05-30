@@ -19,6 +19,7 @@ export default class Grid {
     }
 
     set startNode(node: Node | undefined) {
+        if (this.startNode === node) return;
         this.startNode?.unsetAsStart();
         this._startNode = node;
     }
@@ -28,6 +29,7 @@ export default class Grid {
     }
 
     set finishNode(node: Node | undefined) {
+        if (this.finishNode === node) return;
         this.finishNode?.unsetAsFinish();
         this._finishNode = node;
     }

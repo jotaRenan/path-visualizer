@@ -32,16 +32,24 @@ export class Node {
 
     public markAsWall = (isWall: boolean) => {
         this._isWall.next(isWall);
-        this.unsetAsFinish();
-        this.unsetAsStart();
+        // this.unsetAsFinish();
+        // this.unsetAsStart();
     }
 
     get isStart$() {
         return this._isStart$.asObservable();
     }
 
+    get isStart() {
+        return this._isStart$.value;
+    }
+
     get isFinish$() {
         return this._isFinish$.asObservable();
+    }
+
+    get isFinish() {
+        return this._isFinish$.value;
     }
 
     get isWall() {
