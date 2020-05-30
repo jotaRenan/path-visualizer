@@ -1,9 +1,9 @@
-import { fromEvent, interval } from "rxjs";
-import { filter, map, skip, takeWhile } from "rxjs/operators";
+import { fromEvent, interval, never, Observable, of } from "rxjs";
+import { filter, map, scan, skip, startWith, switchMap, takeWhile, tap, concatMap } from "rxjs/operators";
 import { DijkstraSolver } from "../domain/dijkstraSolver";
 import Grid from "../domain/grid";
 import { Node, NodeStatus } from '../domain/node';
-import Solver, { Solution } from "../domain/solver";
+import Solver, { Solution } from "../domain/solver.interface";
 import { AnimationDelay } from "../utils/constants";
 
 export function generateGrid(rows: number, columns: number, gridContainer: HTMLElement) {
@@ -84,12 +84,36 @@ function registerDOMListeners(domNode: HTMLDivElement, node: Node) {
 export function solve(grid: Grid) {
     const solver: Solver = new DijkstraSolver();
     const solutionSteps = solver.solve(grid);
-    interval(AnimationDelay)
+    const pauseButton = document.getElementById('pauseButton');
+
+    const pauser = fromEvent(pauseButton, 'click')
         .pipe(
-            map(_ => solutionSteps.next()),
-            takeWhile(steps => !steps.done),
-            filter(step => step.value),
-        ).subscribe(step => visualizeNode(grid, step.value));
+            scan((currentState) => !currentState, false),
+            startWith(false)
+        );
+
+    const stepSolver$ = of(undefined).pipe(
+        map(_ => solutionSteps.next()),
+        takeWhile(steps => !steps.done),
+        filter(step => step.value),
+        map(step => step.value as Solution),
+        tap(stepValue => visualizeNode(grid, stepValue))
+    );
+
+    const solver$ = interval(AnimationDelay)
+        .pipe(
+            switchMap(() => stepSolver$)
+        );
+
+    pauser.pipe(
+        switchMap(paused => paused ? never() : solver$)
+    ).subscribe();
+
+    const nextStepButton = document.getElementById('nextStepButton');
+    fromEvent(nextStepButton, 'click').pipe(
+        switchMap(() => stepSolver$)
+    ).subscribe();
+
 }
 
 function visualizeNode(grid: Grid, { isPath, node }: Solution) {

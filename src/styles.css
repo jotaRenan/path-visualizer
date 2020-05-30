@@ -1,5 +1,5 @@
 body {
-    --cellSize: 30px;
+    --cellSize: 8px;
 }
     
 * {
@@ -28,7 +28,6 @@ body {
 }
 
 .grid .cell {
-    border: .5px darkred dashed;
     background-color: white;
 }
 
@@ -43,6 +42,7 @@ body {
 }
 .grid .cell.visited {
     background-color: darkslateblue;
+    transition: .1s ease-in;
 }
 .grid .cell.path {
     background-color: greenyellow;

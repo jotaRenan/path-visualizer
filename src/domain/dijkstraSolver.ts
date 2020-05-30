@@ -1,4 +1,4 @@
-import Solver, { Solution } from './solver';
+import Solver, { Solution } from './solver.interface';
 import Grid from "./grid";
 import { Node } from "./node";
 
