@@ -2,7 +2,7 @@ var HtmlWebpackPlugin = require('html-webpack-plugin');
 const path = require('path');
 
 module.exports = {
-    entry: ['./src/index.ts', './src/styles.css'],
+    entry: ['./src/index.ts'],
     devtool: 'inline-source-map',
     module: {
         rules: [
@@ -10,8 +10,12 @@ module.exports = {
                 test: /\.tsx?$/,
                 use: 'ts-loader',
                 exclude: /node_modules/
-            }
-        ]
+            },
+            {
+                test: /\.css$/i,
+                use: ['style-loader', 'css-loader'],
+            },
+        ],
     },
     resolve: {
         extensions: ['.ts', '.js', '.tsx']
@@ -25,5 +29,4 @@ module.exports = {
             template: './src/index.html'
         })
     ]
-
 }

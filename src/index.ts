@@ -1,7 +1,7 @@
 import { generateGrid, solve } from './application/grid-orchestrator';
 import { Columns, Rows } from './utils/constants';
 import { getParams } from './utils/helper';
-
+import './styles.css';
 
 (function () {
     const gridContainer = document.getElementById('GridContainer');
